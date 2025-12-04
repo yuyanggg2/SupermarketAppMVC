@@ -4,63 +4,160 @@
   <meta charset="UTF-8">
   <title>Your Cart</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <style>
+    body {
+      background: #f4f6fa;
+      font-family: "Poppins", sans-serif;
+    }
+
+    .cart-table td {
+      vertical-align: middle !important;
+    }
+
+    .qty-input {
+      width: 70px;
+      height: 40px;
+      text-align: center;
+    }
+
+    .qty-cell form {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;           
+    }
+
+    .update-btn {
+      height: 40px;
+      padding: 0 18px;
+    }
+
+    .delete-btn {
+      height: 40px;
+      padding: 0 20px;
+      background-color: #dc3545;
+    }
+
+    img.cart-img {
+      width: 90px;
+      height: 90px;
+      object-fit: contain;
+    }
+
+    .header-row {
+      background: #007bff;
+      color: white;
+      font-size: 1.1rem;
+      text-transform: uppercase;
+    }
+
+    .bulk-btn {
+      padding: 12px 25px;
+      font-size: 1rem;
+      border-radius: 10px;
+    }
+  </style>
 </head>
+
 <body>
-    <!-- Navbar -->
-  <nav class="navbar navbar-expand-sm bg-dark navbar-dark">
+  <!-- Navbar -->
+  <nav class="navbar navbar-expand-sm navbar-dark bg-dark">
     <div class="container-fluid">
-      <a class="navbar-brand" href="/">Supermarket App</a>
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#collapsibleNavbar">
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div class="collapse navbar-collapse" id="collapsibleNavbar">
+      <a class="navbar-brand" href="/shopping">Supermarket App</a>
+      <div class="collapse navbar-collapse">
         <ul class="navbar-nav">
-          <li class="nav-item">
-            <a class="nav-link" href="/shopping">Shop</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/cart">View Cart</a>
-          </li>
-          <li class="nav-item">
-            <a class="nav-link" href="/logout">Logout</a>
-          </li> 
+          <li class="nav-item"><a class="nav-link" href="/shopping">Shop</a></li>
+          <li class="nav-item"><a class="nav-link active" href="/cart">View Cart</a></li>
+          <li class="nav-item"><a class="nav-link" href="/logout">Logout</a></li>
         </ul>
       </div>
     </div>
   </nav>
-  <!-- Cart Content -->
-  <div class="container">
-    <h2 class="mt-4">Shopping Cart</h2>
+
+  <div class="container mt-4">
+    <h2 class="fw-bold mb-3 text-primary">🛒 Shopping Cart</h2>
+
     <% if (cart.length === 0) { %>
-      <p>Your cart is empty.</p>
+
+      <div class="alert alert-info">Your cart is empty.</div>
+
     <% } else { %>
-      <table class="table table-bordered">
-        <thead>
+
+      <table class="table table-bordered table-hover cart-table bg-white shadow-sm">
+        <thead class="header-row text-center">
           <tr>
-            <th>Product</th>
-            <th>Price</th>
-            <th>Quantity</th>
-            <th>Total</th>
+            <th>SELECT</th>
+            <th>PRODUCT</th>
+            <th>IMAGE</th>
+            <th>PRICE</th>
+            <th>QUANTITY</th>
+            <th>TOTAL</th>
+            <th>ACTION</th>
           </tr>
         </thead>
         <tbody>
-          <% let total = 0; %>
-          <% for (let i = 0; i < cart.length; i++) { %>
-            <tr>
-                <td><%= cart[i].productName %></td>
-                <td><img src="/images/<%= cart[i].image %>" width="80" class="img-thumbnail"></td>
-                <td><%= cart[i].quantity %></td>
-                <td>$<%= (cart[i].price * cart[i].quantity).toFixed(2) %></td>
+          <% let grandTotal = 0; %>
+
+          <% cart.forEach(item => { %>
+            <tr class="text-center">
+            
+              <td>
+                <input type="checkbox" name="selected[]" value="<%= item.productName %>">
+              </td>
+
+              
+              <td class="fw-semibold"><%= item.productName %></td>
+
+              
+              <td>
+                <img src="/images/<%= item.image %>" class="cart-img">
+              </td>
+
+              
+              <td class="fw-bold">$<%= item.price.toFixed(2) %></td>
+
+             
+              <td class="qty-cell">
+                <form action="/cart/update/<%= item.productName %>" method="POST">
+                  <input
+                    type="number"
+                    name="quantity"
+                    value="<%= item.quantity %>"
+                    min="1"
+                    class="form-control qty-input"
+                  >
+                  <button type="submit" class="btn btn-primary update-btn">Update</button>
+                </form>
+              </td>
+
+           
+              <td class="fw-bold">
+                $<%= (item.price * item.quantity).toFixed(2) %>
+              </td>
+
+             
+              <td>
+                <form action="/cart/delete/<%= item.productName %>" method="POST">
+                  <button type="submit" class="btn btn-danger delete-btn">Delete</button>
+                </form>
+              </td>
             </tr>
-            <% total += cart[i].price * cart[i].quantity; %>
-          <% }; %>
+
+            <% grandTotal += item.price * item.quantity; %>
+          <% }); %>
         </tbody>
       </table>
-      <h4>Total: $<%= total.toFixed(2) %></h4>
 
-      <div class="mt-4">
-        <a href="/shopping" class="btn btn-secondary">Back to Shopping</a>
+      <h3 class="text-end fw-bold me-2">Total: $<%= grandTotal.toFixed(2) %></h3>
+
+      <div class="mt-4 d-flex gap-3">
+       <a href="/shopping" class="btn btn-secondary bulk-btn">← Back to Shopping</a>
+
+       <!-- Proceed to Checkout button -->
+       <a href="/checkout" class="btn btn-success bulk-btn">Proceed to Checkout →</a>
       </div>
+
     <% } %>
   </div>
 </body>

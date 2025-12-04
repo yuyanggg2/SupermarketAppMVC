@@ -5,6 +5,21 @@ const flash = require('connect-flash');
 const multer = require('multer');
 const app = express();
 
+app.use(session({
+    secret: 'secret',
+    resave: false,
+    saveUninitialized: true,
+    // Session expires after 1 week of inactivity
+    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } 
+}));
+
+// Make session user available in ALL EJS pages
+app.use((req, res, next) => {
+  res.locals.user = req.session.user || null;
+  next();
+});
+
+
 // Set up multer for file uploads
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -15,22 +30,13 @@ const storage = multer.diskStorage({
     }
 });
 
+
+
+
 const upload = multer({ storage: storage });
 
-const connection = mysql.createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: 'Republic_C207',
-    database: 'c372_supermarketdb'
-  });
+const db = require('./db');
 
-connection.connect((err) => {
-    if (err) {
-        console.error('Error connecting to MySQL:', err);
-        return;
-    }
-    console.log('Connected to MySQL database');
-});
 
 // Set up view engine
 app.set('view engine', 'ejs');
@@ -41,16 +47,14 @@ app.use(express.urlencoded({
     extended: false
 }));
 
-//TO DO: Insert code for Session Middleware below 
-app.use(session({
-    secret: 'secret',
-    resave: false,
-    saveUninitialized: true,
-    // Session expires after 1 week of inactivity
-    cookie: { maxAge: 1000 * 60 * 60 * 24 * 7 } 
-}));
-
 app.use(flash());
+
+const userController = require('./controllers/userController');
+const productController = require('./controllers/productController');
+const checkoutRoutes = require('./model/checkoutRoutes');
+app.use('/', checkoutRoutes);
+
+
 
 // Middleware to check if user is logged in
 const checkAuthenticated = (req, res, next) => {
@@ -72,6 +76,8 @@ const checkAdmin = (req, res, next) => {
     }
 };
 
+
+
 // Middleware for form validation
 const validateRegistration = (req, res, next) => {
     const { username, email, password, address, contact, role } = req.body;
@@ -88,6 +94,13 @@ const validateRegistration = (req, res, next) => {
     next();
 };
 
+const adminRoutes = require('./model/adminRoutes');
+  app.use('/', adminRoutes);
+
+const orderRoutes = require('./model/orderRoutes');
+app.use(orderRoutes);
+
+
 // Define routes
 app.get('/',  (req, res) => {
     res.render('index', {user: req.session.user} );
@@ -100,6 +113,8 @@ app.get('/inventory', checkAuthenticated, checkAdmin, (req, res) => {
       res.render('inventory', { products: results, user: req.session.user });
     });
 });
+
+
 
 app.get('/register', (req, res) => {
     res.render('register', { messages: req.flash('error'), formData: req.flash('formData')[0] });
@@ -134,7 +149,7 @@ app.post('/login', (req, res) => {
     }
 
     const sql = 'SELECT * FROM users WHERE email = ? AND password = SHA1(?)';
-    connection.query(sql, [email, password], (err, results) => {
+    db.query(sql, [email, password], (err, results) => {
         if (err) {
             throw err;
         }
@@ -157,7 +172,7 @@ app.post('/login', (req, res) => {
 
 app.get('/shopping', checkAuthenticated, (req, res) => {
     // Fetch data from MySQL
-    connection.query('SELECT * FROM products', (error, results) => {
+    db.query('SELECT * FROM products', (error, results) => {
         if (error) throw error;
         res.render('shopping', { user: req.session.user, products: results });
       });
@@ -167,7 +182,7 @@ app.post('/add-to-cart/:id', checkAuthenticated, (req, res) => {
     const productId = parseInt(req.params.id);
     const quantity = parseInt(req.body.quantity) || 1;
 
-    connection.query('SELECT * FROM products WHERE id = ?', [productId], (error, results) => {
+    db.query('SELECT * FROM products WHERE id = ?', [productId], (error, results) => {
         if (error) throw error;
 
         if (results.length > 0) {
@@ -227,6 +242,9 @@ app.get('/product/:id', checkAuthenticated, (req, res) => {
       }
   });
 });
+
+
+
 
 app.get('/addProduct', checkAuthenticated, checkAdmin, (req, res) => {
     res.render('addProduct', {user: req.session.user } ); 
@@ -313,5 +331,39 @@ app.get('/deleteProduct/:id', (req, res) => {
     });
 });
 
+//viewing all users - admin only
+app.get('/viewusers', (req, res) => {
+  if (!req.session.user) {
+    return res.redirect('/login');
+  }
+
+  if (req.session.user.role !== 'admin') {
+    return res.status(403).send('Access denied. Admins only.');
+  }
+
+  userController.getAllUsers(req, res);
+});
+
+
+// Delete user (admin only)
+app.post('/deleteuser/:id', (req, res) => {
+  if (!req.session.user || req.session.user.role !== 'admin') {
+    return res.status(403).send('Access denied.');
+  }
+
+  const userId = req.params.id;
+  const sql = 'DELETE FROM users WHERE id = ? AND role != "admin"'; 
+
+  connection.query(sql, [userId], (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send('Database error.');
+    }
+    res.redirect('/viewusers');
+  });
+});
+
+
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running at http://localhost:${PORT}`));
+

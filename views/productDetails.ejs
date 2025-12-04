@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title><%= product.productName %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-4">
+
+  <h2><%= product.productName %></h2>
+
+  <!-- Average Rating -->
+  <h4>
+    ⭐ Average Rating: <%= Number(avgRating || 0).toFixed(1) %> / 5    
+    (<%= reviewCount || 0 %> reviews)
+  </h4>
+
+  <img src="/images/<%= product.image %>" width="200">
+
+  <hr>
+
+  <!-- Review Form -->
+  <% if (user) { %>
+  <form action="/product/<%= product.id %>/addReview" method="POST" class="mb-4">
+    <div class="mb-2">
+      <label>Rate this product:</label>
+      <select required name="rating" class="form-select w-25">
+        <option value="1">⭐ 1</option>
+        <option value="2">⭐⭐ 2</option>
+        <option value="3">⭐⭐⭐ 3</option>
+        <option value="4">⭐⭐⭐⭐ 4</option>
+        <option value="5">⭐⭐⭐⭐⭐ 5</option>
+      </select>
+    </div>
+
+    <textarea name="review_text" required class="form-control w-50" placeholder="Write your review..."></textarea><br>
+
+    <button type="submit" class="btn btn-primary">Submit Review</button>
+  </form>
+  <% } else { %>
+    <p><a href="/login">Login to review</a></p>
+  <% } %>
+
+  <hr>
+
+  <!-- Reviews -->
+  <h4>Customer Reviews</h4>
+  <% if (reviews.length === 0) { %>
+    <p>No reviews yet.</p>
+  <% } %>
+
+  <% reviews.forEach(r => { %>
+    <div class="border rounded p-3 mb-2 bg-white">
+      <strong><%= r.username %></strong>
+      <span class="text-warning">⭐ <%= r.rating %></span>
+      <p><%= r.review_text %></p>
+      <small class="text-muted"><%= r.created_at.toLocaleString() %></small>
+    </div>
+  <% }) %>
+
+</div>
+
+</body>
+</html>

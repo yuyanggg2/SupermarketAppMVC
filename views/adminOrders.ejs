@@ -1,0 +1,29 @@
+<h2>All Orders (Admin)</h2>
+
+<table class="table table-bordered">
+  <tr>
+    <th>Order ID</th>
+    <th>User</th>
+    <th>Total</th>
+    <th>Payment</th>
+    <th>Status</th>
+    <th>Date</th>
+  </tr>
+
+  <% orders.forEach(o => { %>
+    <tr>
+      <td><%= o.id %></td>
+      <td><%= o.username %></td>
+      <td>$<%= o.total %></td>
+      <td><%= o.payment_method %></td>
+      <td>
+        <% if (o.status === 'Paid') { %>
+          <span class="badge bg-success">Paid</span>
+        <% } else { %>
+          <span class="badge bg-danger">Unpaid</span>
+        <% } %>
+      </td>
+      <td><%= o.created_at %></td>
+    </tr>
+  <% }) %>
+</table>
