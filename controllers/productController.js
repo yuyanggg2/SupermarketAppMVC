@@ -1,3 +1,4 @@
+const db = require('../db');
 
 const Product = require('../model/Product');
 
@@ -116,7 +117,7 @@ exports.cartActions = (req, res) => {
     }
 };
 
-const db = require('../db');
+
 
 exports.viewProduct = (req, res) => {
     const productId = req.params.id;
@@ -132,6 +133,7 @@ exports.viewProduct = (req, res) => {
     const avgSql = `
         SELECT AVG(rating) AS avgRating, COUNT(*) AS totalReviews
         FROM reviews WHERE product_id = ?`;
+   const db = require('../db');
 
     db.query(productSql, [productId], (err, productResult) => {
         if (err) throw err;
@@ -154,6 +156,10 @@ exports.viewProduct = (req, res) => {
 };
 
 exports.addReview = (req, res) => {
+  if (!req.session.user) {
+  return res.status(401).send("Login required");
+}
+
     const productId = req.params.id;
     const userId = req.session.user.id;
     const { rating, review_text } = req.body;

@@ -1,15 +1,24 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const checkoutController = require('../controllers/checkoutController');
 
-// Checkout flow
-router.get('/checkout', checkoutController.showCheckoutPage);
-router.post('/checkout', checkoutController.processCheckout);
+const checkoutController = require("../controllers/checkoutController");
 
-// User views own orders
-router.get('/my-orders', checkoutController.myOrders);
+// GET checkout (Render page)
+router.get("/checkout", (req, res) => {
+  res.render("checkout", { cart: req.session.cart || [] });
+});
 
-// Admin views all orders
-router.get('/admin/orders', checkoutController.adminOrders);
+// POST checkout (Process order)
+router.post("/checkout", checkoutController.processCheckout);
+// ✔ Checkout success page
+router.get("/checkoutSuccess", (req, res) => {
+  res.render("checkoutSuccess", {
+    order: req.session.lastOrder,
+    user: req.session.user   
+  });
+});
+
+
 
 module.exports = router;
+
