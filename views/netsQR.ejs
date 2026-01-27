@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NETS QR Payment</title>
+
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; background: #fff; }
+    .container { max-width: 560px; margin: 0 auto; }
+    h1 { margin: 0 0 6px; }
+    .muted { color: #666; margin-top: 0; }
+
+    .qrWrap {
+      position: relative;
+      width: 320px;
+      max-width: 100%;
+      margin: 18px auto;
+    }
+    .qrImg {
+      width: 100%;
+      display: block;
+      border: 1px solid #e5e5e5;
+      border-radius: 12px;
+      padding: 10px;
+      background: white;
+    }
+    /* 可选：把 NETS logo 盖在中间（像你图一那样） */
+    .qrLogo {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 110px;
+      max-width: 40%;
+      background: white;
+      padding: 6px 8px;
+      border-radius: 10px;
+      border: 1px solid #eee;
+    }
+
+    .card { border: 1px solid #ddd; border-radius: 12px; padding: 16px; }
+    .row { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+    hr { border: none; border-top: 1px solid #eee; margin: 12px 0; }
+
+    ul { padding-left: 18px; margin: 6px 0 0; }
+    .btns { margin-top: 14px; display: flex; gap: 10px; }
+    a.btn {
+      display: inline-block;
+      padding: 10px 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      border: 1px solid #ccc;
+      color: #111;
+    }
+    a.primary { background: #111; color: #fff; border-color: #111; }
+    .danger { color: #b00020; }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1>Scan with your bank simulator app to complete payment</h1>
+    <p class="muted" id="status">Please scan the QR within 5 minutes.</p>
+
+    <!-- ✅ Real QR (from backend: qrDataUrl) -->
+    <% if (typeof qrDataUrl !== "undefined" && qrDataUrl) { %>
+      <div class="qrWrap">
+        <img class="qrImg" src="<%= qrDataUrl %>" alt="NETS QR Code" />
+        <!-- ✅ optional logo overlay (needs /public/images/netsQrLogo.png) -->
+        <img class="qrLogo" src="/images/netsQrLogo.png" alt="NETS" />
+      </div>
+    <% } else { %>
+      <p class="danger"><b>QR not generated.</b> (Your route must pass <code>qrDataUrl</code>.)</p>
+    <% } %>
+
+    <div class="card">
+      <div class="row">
+        <div><b>Time remaining</b></div>
+        <div id="timer">05:00</div>
+      </div>
+
+      <hr />
+
+      <!-- ✅ Order summary (safe even if order missing) -->
+      <% if (typeof order !== "undefined" && order) { %>
+        <p><b>Order ID:</b> <%= order.order_id %></p>
+        <p><b>Name:</b> <%= order.fullname %></p>
+        <p><b>Delivery:</b> <%= order.deliveryMethod %></p>
+        <p><b>Total:</b> $<%= Number(order.total).toFixed(2) %></p>
+
+        <% if (order.items && order.items.length) { %>
+          <h3>Items</h3>
+          <ul>
+            <% order.items.forEach(i => { %>
+              <li><%= i.productName %> x <%= i.quantity %> ($<%= Number(i.price).toFixed(2) %>)</li>
+            <% }) %>
+          </ul>
+        <% } %>
+      <% } else { %>
+        <p class="muted">No order found in session. Please checkout again.</p>
+      <% } %>
+
+      <div class="btns">
+        <a class="btn" href="/cart">Cancel</a>
+        <a class="btn primary" href="/">Back to Home</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ✅ Countdown Timer (5 mins)
+    const timerEl = document.getElementById("timer");
+    const statusEl = document.getElementById("status");
+    let remaining = 300;
+
+    const interval = setInterval(() => {
+      const m = Math.floor(remaining / 60);
+      const s = remaining % 60;
+      timerEl.textContent = `${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+      remaining--;
+
+      if (remaining < 0) {
+        clearInterval(interval);
+        timerEl.textContent = "00:00";
+        statusEl.textContent = "Transaction timed out. Please try again.";
+        statusEl.classList.add("danger");
+      }
+    }, 1000);
+  </script>
+
+
+  
+</body>
+</html>

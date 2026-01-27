@@ -95,7 +95,7 @@ exports.processCheckout = (req, res) => {
       // =======================================
       // 6️⃣ REDIRECT
       // =======================================
-      res.redirect("/checkoutSuccess");
+      res.redirect("/netsQR");
     }
   );
 };
